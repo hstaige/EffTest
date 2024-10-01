@@ -14,7 +14,11 @@ TRAIN_PERCENT = 0.8
 
 rng = np.random.default_rng(seed=seed)
 
+test_wls = np.linspace(0, 30, 100)
+true_effs = {'wavelength': test_wls}
+
 for i in range(N_DATASETS):
+    eff_params = sample_params(rng)
     for mode in ['train', 'test']:
         if mode == 'train':
             n_lines_mode = floor(N_LINES * TRAIN_PERCENT)
@@ -29,7 +33,9 @@ for i in range(N_DATASETS):
         wls = rng.uniform(WL_MIN, WL_MAX, n_lines_mode)
         theoretical_intensities = 10 ** rng.uniform(2, 4, n_lines_mode)
 
-        experimental_intensities = theoretical_intensities * base_eff(wls, **sample_params(rng))
+        true_effs[i] = base_eff(test_wls, **eff_params)
+
+        experimental_intensities = theoretical_intensities * base_eff(wls, **eff_params)
         experimental_uncertainties = rng.uniform(np.sqrt(experimental_intensities) * 0.9,
                                                  np.sqrt(experimental_intensities) * 1.1)
         experimental_intensities += rng.normal(0, experimental_uncertainties)
@@ -40,3 +46,5 @@ for i in range(N_DATASETS):
                      'ExpIntensityUnc': experimental_uncertainties, 'TheoryIntensity':theoretical_intensities}
         df = pd.DataFrame(data_dict)
         df.to_csv(save_folder + f'/dataset{i}_{mode}.csv', index=False)
+
+pd.DataFrame(true_effs).to_csv('true_efficiencies.csv', index=False)
